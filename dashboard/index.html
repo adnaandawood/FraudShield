@@ -1,0 +1,49 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Fraud Review Queue</title>
+<style>
+body{font-family:system-ui;margin:2rem}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px;font-size:14px}
+.BLOCK{background:#ffe1e1}.REVIEW{background:#fff4d6}.APPROVE{background:#e6f7e6}
+#meta{color:#555;margin:8px 0}#err{color:#b00020;white-space:pre-wrap;margin:8px 0}
+button{padding:6px 14px;font-size:14px}
+</style>
+</head><body>
+<h1>Fraud Review Queue</h1>
+<p>Fetches <code>GET /alerts</code> from the API (default localhost:8000). Auto-refreshes every 5s.</p>
+<button onclick="load()">Refresh now</button>
+<div id="meta"></div>
+<div id="err"></div>
+<table><thead><tr><th>Alert</th><th>Txn</th><th>Decision</th><th>Score</th><th>Reasons</th><th>Status</th><th>Created</th></tr></thead>
+<tbody id="rows"></tbody></table>
+<script>
+function decisionOf(a){
+  if (a.decision) return a.decision;            // in-memory inline-scored items
+  const s = Number(a.risk_score ?? 0);           // postgres rows: derive band from score
+  return s > 0.70 ? 'BLOCK' : s >= 0.30 ? 'REVIEW' : 'APPROVE';
+}
+async function load(){
+  const errBox = document.getElementById('err');
+  try{
+    const res = await fetch('http://localhost:8000/alerts?limit=50');
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    errBox.textContent = '';
+    const list = data.alerts || [];
+    document.getElementById('meta').textContent =
+      `source=${data.source||'?'} | alerts=${list.length} | updated=${new Date().toLocaleTimeString()}`;
+    document.getElementById('rows').innerHTML = list.map(a=>{
+      const d = decisionOf(a);
+      return `<tr class="${d}">
+        <td>${a.id??a.alert_id??''}</td><td>${(a.transaction||{}).transactionId||a.transaction_id||''}</td>
+        <td>${d}</td><td>${a.risk_score??''}</td>
+        <td>${(a.reasons||a.reason||[]).toString()}</td>
+        <td>${a.status||''}</td><td>${a.created_at||''}</td></tr>`;
+    }).join('');
+  }catch(e){
+    errBox.textContent = 'Could not reach API at http://localhost:8000/alerts — is `python -m api.main` running? (' + e + ')';
+  }
+}
+load();
+setInterval(load, 5000);
+</script>
+</body></html>

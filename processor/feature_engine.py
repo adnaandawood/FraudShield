@@ -120,3 +120,13 @@ def get_features(user_id: str, device: str, country: str,
     }
 
 
+def build_feature_vector(amount: float, features: dict) -> dict:
+    """Flat dict the ML model consumes."""
+    return {
+        "amount": amount,
+        "tx_count_5m": features.get("tx_count_5m", 0),
+        "tx_count_24h": features.get("tx_count_24h", 0),
+        "amount_24h": features.get("amount_24h", 0.0),
+        "new_device": features.get("new_device", 0),
+        "new_country": features.get("new_country", 0),
+    }

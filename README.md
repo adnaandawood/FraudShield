@@ -30,7 +30,7 @@ fraud-detection/
 ## 0. Setup
 
 ```powershell
-cd C:\Users\91910\Documents\Projects\FraudDetection
+cd <Path-To-Repo>
 python -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 Copy-Item .env.example .env
